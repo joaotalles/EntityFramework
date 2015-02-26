@@ -4,8 +4,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using JetBrains.Annotations;
-using Microsoft.Data.Entity.Query.ResultOperators;
+using Microsoft.Data.Entity.Internal;
 using Microsoft.Data.Entity.Utilities;
 using Remotion.Linq;
 using Remotion.Linq.Clauses.Expressions;
@@ -30,8 +31,10 @@ namespace Microsoft.Data.Entity.Query
         {
             foreach (var resultOperator
                 in queryModel.ResultOperators
-                    .Where(ro => ro is IncludeResultOperator
-                                 || ro is AsNoTrackingResultOperator)
+                    .Where(ro => ro.GetType()
+                        .GetTypeInfo()
+                        .GetCustomAttributes()
+                        .Any(a => a.GetType() == typeof(QueryAnnotationAttribute)))
                     .ToList())
             {
                 queryAnnotations.Add(

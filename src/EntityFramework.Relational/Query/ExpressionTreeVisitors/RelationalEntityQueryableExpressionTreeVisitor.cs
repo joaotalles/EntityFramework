@@ -7,8 +7,11 @@ using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
+using Microsoft.Data.Entity.Infrastructure;
 using Microsoft.Data.Entity.Query;
 using Microsoft.Data.Entity.Query.ExpressionTreeVisitors;
+using Microsoft.Data.Entity.Query.ResultOperators;
+using Microsoft.Data.Entity.Relational.Query.Annotations;
 using Microsoft.Data.Entity.Relational.Query.Expressions;
 using Microsoft.Data.Entity.Utilities;
 using Remotion.Linq.Clauses;
@@ -68,7 +71,7 @@ namespace Microsoft.Data.Entity.Relational.Query.ExpressionTreeVisitors
             return base.VisitMethodCallExpression(methodCallExpression);
         }
 
-        protected override Expression VisitEntityQueryable(Type elementType)
+        protected override Expression VisitEntityQueryable([NotNull] Type elementType)
         {
             Check.NotNull(elementType, nameof(elementType));
 
@@ -78,15 +81,33 @@ namespace Microsoft.Data.Entity.Relational.Query.ExpressionTreeVisitors
             var selectExpression = new SelectExpression();
             var tableName = QueryModelVisitor.QueryCompilationContext.GetTableName(entityType);
 
-            selectExpression
-                .AddTable(
-                    new TableExpression(
-                        tableName,
-                        QueryModelVisitor.QueryCompilationContext.GetSchema(entityType),
-                        _querySource.ItemName.StartsWith("<generated>_")
-                            ? tableName.First().ToString().ToLower()
-                            : _querySource.ItemName,
-                        _querySource));
+            var alias = _querySource.ItemName.StartsWith("<generated>_")
+                ? tableName.First().ToString().ToLower()
+                : _querySource.ItemName;
+
+            var fromSqlAnnotations = GetAnnotations<FromSqlAnnotation>(_querySource).ToList();
+
+            switch(fromSqlAnnotations.Count)
+            {
+                case 0:
+                    selectExpression.AddTable(
+                        new TableExpression(
+                            tableName,
+                            QueryModelVisitor.QueryCompilationContext.GetSchema(entityType),
+                            alias,
+                            _querySource));
+                    break;
+                case 1:
+                    selectExpression.AddTable(
+                        new RawSqlDerivedTableExpression(
+                            fromSqlAnnotations[0].Sql,
+                            fromSqlAnnotations[0].Parameters,
+                            alias,
+                            _querySource));
+                    break;
+                default:
+                    throw new InvalidOperationException(Strings.MultipleFromSqlCalls);
+            }
 
             QueryModelVisitor.AddQuery(_querySource, selectExpression);
 

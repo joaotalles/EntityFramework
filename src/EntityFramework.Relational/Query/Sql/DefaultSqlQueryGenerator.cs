@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -176,6 +177,32 @@ namespace Microsoft.Data.Entity.Relational.Query.Sql
 
                 itemAction(items[i]);
             }
+        }
+
+        public virtual Expression VisitRawSqlDerivedTableExpression([NotNull] RawSqlDerivedTableExpression rawSqlDerivedTableExpression)
+        {
+            Check.NotNull(rawSqlDerivedTableExpression, nameof(rawSqlDerivedTableExpression));
+
+            _sql.AppendLine("(");
+
+            using (_sql.Indent())
+            {
+                var sql = string.Format(rawSqlDerivedTableExpression.Sql, rawSqlDerivedTableExpression.Parameters);
+
+                using (var reader = new StringReader(sql))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        _sql.AppendLine(line);
+                    }
+                }
+            }
+
+            _sql.Append(") AS ")
+                .Append(DelimitIdentifier(rawSqlDerivedTableExpression.Alias));
+
+            return rawSqlDerivedTableExpression;
         }
 
         public virtual Expression VisitTableExpression(TableExpression tableExpression)

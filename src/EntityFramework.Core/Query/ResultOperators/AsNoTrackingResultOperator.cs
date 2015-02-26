@@ -4,12 +4,14 @@
 using System;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
+using Microsoft.Data.Entity.Internal;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
 using Remotion.Linq.Clauses.StreamedData;
 
 namespace Microsoft.Data.Entity.Query.ResultOperators
 {
+    [QueryAnnotation]
     public class AsNoTrackingResultOperator : SequenceTypePreservingResultOperatorBase
     {
         public override string ToString()

@@ -5,7 +5,7 @@ namespace Microsoft.Data.Entity.Relational
     using System.Globalization;
     using System.Reflection;
     using System.Resources;
-	using JetBrains.Annotations;
+    using JetBrains.Annotations;
 
     public static class Strings
     {
@@ -42,6 +42,14 @@ namespace Microsoft.Data.Entity.Relational
         public static string MultipleDataStoresConfigured
         {
             get { return GetString("MultipleDataStoresConfigured"); }
+        }
+
+        /// <summary>
+        /// Multiple calls to FromSql are not supported.
+        /// </summary>
+        public static string MultipleFromSqlCalls
+        {
+            get { return GetString("MultipleFromSqlCalls"); }
         }
 
         /// <summary>
